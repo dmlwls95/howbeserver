@@ -1,4 +1,5 @@
 let mongoose = require('mongoose');
+const crypto = require('crypto');
 //let mongoosePaginate = require('mongoose-paginate');
 //let bcrypt = require('bcrypt-nodejs');
 let accountSchema = mongoose.Schema(
@@ -9,6 +10,12 @@ let accountSchema = mongoose.Schema(
 
     PW: { type: String },
     
+    salt: {type: String},
+
+    birthday: {type : Date},
+    
+    check: {type: String},
+    
     proImage : { contentType: String, data: Buffer }
   },
   { collection: 'account' }
@@ -17,11 +24,13 @@ let accountSchema = mongoose.Schema(
 
 //accountSchema.plugin(mongoosePaginate);
 accountSchema.methods.comparePassword = function(passw, cb) {
-  if (this.PW == passw) {
-    cb(null, true);
-  } else {
-    return cb(null, false);
-  }
+  crypto.pbkdf2(passw, this.salt, 10000, 64, 'sha512', (err, key)=>{
+    if(this.PW === key.toString('base64')){
+      cb(null, true);
+    } else {
+      return cb(null, false)
+    }
+  })
 };
 
 let Account = mongoose.model('account', accountSchema);

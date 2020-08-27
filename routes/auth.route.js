@@ -5,7 +5,8 @@ const passport =require('passport');
 const authRoutes = express.Router();
 const jwt = require('jsonwebtoken');
 const config = require('../config/database.js');
-
+const fs = require('fs');
+const crypto = require('crypto');
 // require models
 let Account = require('../models/account.js');
 let Proimage = require('../models/proimage.js')
@@ -30,7 +31,7 @@ getToken = function(headers) {
 //**default render method */
 authRoutes.get('/', (req,res,next) => {
   //console.log(distDir + '/index.html')
-  res.render('../dist/index.html');
+  res.send('test')
 })
 
 //** login method*/
@@ -66,41 +67,51 @@ authRoutes.post('/login', (req,res,next) => {
     }
   )
 });
+
 //** sign up method */
-authRoutes.post('/signup',(req,res)=>{
-  console.log(req.body)
-  let newItem = new Account();
-  newItem._id = new mongoose.Types.ObjectId();
-  newItem.ID = req.body.ID;
-  newItem.PW = req.body.PW;
-  newItem.proImage.data = fs.readFileSync(__dirname + '/default-profile.png');
-  newItem.proImage.contentType = 'image/png';
-  Account.findOne(
-    {ID: req.body.ID}, (err,result)=>{
-      if(err){
-        console.log(err);
-        throw err;
-      } 
-      if(!result){
-        /*Account.insertMany({ID: id, PW: pw, proImage: newPro}, (err, docs)=>{  
-          res.status(200).send({
-            success: true,
-            msg: 'The request was successfully completed.'
-          });
-        });*/
-        newItem.save();
-        res.status(200).send({
-          success: true,
-          msg: 'The request was successfully completed.'
-        });
-      }else{
-        res.status(400).send({
-          success: false,
-          msg: 'Already exist. send different ID.'
-        });
-      }
-    }
-  )
+authRoutes.post('/signup', (req,res)=>{
+  crypto.randomBytes(64, (err, buf) => {
+    crypto.pbkdf2(req.body.password, buf.toString('base64'), 100000, 64, 'sha512', (err, key) => {
+      let newItem = new Account();
+      newItem._id = new mongoose.Types.ObjectId();
+      newItem.ID = req.body.email;
+      newItem.PW = key.toString('base64');
+      newItem.salt = buf.toString('base64');
+      newItem.check = req.body.check;
+      newItem.birthday = req.body.birthday;
+      newItem.proImage.data = fs.readFileSync(__dirname + '/default-profile.png');
+      newItem.proImage.contentType = 'image/png';
+      Account.findOne(
+        {ID: req.body.ID}, (err,result)=>{
+          if(err){
+            console.log(err);
+            throw err;
+          } 
+          if(!result){
+            /*Account.insertMany({ID: id, PW: pw, proImage: newPro}, (err, docs)=>{  
+              res.status(200).send({
+                success: true,
+                msg: 'The request was successfully completed.'
+              });
+            });*/
+            newItem.save();
+            console.log('done');
+            res.status(200).send({
+              success: true,
+              msg: 'The request was successfully completed.'
+            });
+          }else{
+            res.status(400).send({
+              success: false,
+              msg: 'Already exist. send different ID.'
+            });
+          }
+        }
+      )
+    });
+  });
+
+    
 })
 //** check jwt method */
 authRoutes.get('/jwtcheck', passport.authenticate('jwt', { session: false }), (req,res)=>{
