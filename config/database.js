@@ -1,4 +1,4 @@
 module.exports = {
-  'secret':'howbesecure',
+  'secret':'vndnhowbesecure',
   'database': 'mongodb://localhost:27017/howbe/'
 };

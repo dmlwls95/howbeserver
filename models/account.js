@@ -16,7 +16,10 @@ let accountSchema = mongoose.Schema(
     
     check: {type: String},
     
-    proImage : { contentType: String, data: Buffer }
+    proImage : {
+       contentType: String,
+       dataurl: String
+      }
   },
   { collection: 'account' }
 );
@@ -24,13 +27,14 @@ let accountSchema = mongoose.Schema(
 
 //accountSchema.plugin(mongoosePaginate);
 accountSchema.methods.comparePassword = function(passw, cb) {
-  crypto.pbkdf2(passw, this.salt, 10000, 64, 'sha512', (err, key)=>{
+  return crypto.pbkdf2(passw, this.salt, 100000, 64, 'sha512', (err, key)=>{
     if(this.PW === key.toString('base64')){
-      cb(null, true);
+      return cb(null, true)
     } else {
       return cb(null, false)
     }
-  })
+  });
+  
 };
 
 let Account = mongoose.model('account', accountSchema);

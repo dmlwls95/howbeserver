@@ -1,62 +1,57 @@
 // server.js
 
-let express = require('express'),
-path = require('path'),
-bodyParser = require('body-parser'),
+let express = require('express');
+const path = require('path');
+const bodyParser = require('body-parser');
 
-cookieParser = require('cookie-parser'),
-mongoose = require('mongoose'),
-db = require('./DB.js'),
-passport = require('passport');
+const cookieParser = require('cookie-parser');
+const mongoose = require('mongoose');
+const db = require('./DB.js');
+const passport = require('passport');
+const passportConfig = require('./config/passport');
 const app = express();
 
+
 var cors = require('cors');
-app.use(cors({
-    origin: 'http://localhost:8100',
-    credentials:true
-}));
-app.options('/*', cors());
+var corsOptions = {
+    origin:  'http://localhost:8100', // 이 주소가 ionic node.js 서버가 동작하는 주소
+    credentials: true,
+    methods: ['POST', 'GET', 'DELETE', 'PUT', 'OPTIONS'],
+    allowedHeaders: "Origin, X-Requested-With, X-AUTHENTICATION, X-IP, Content-Type, Accept, x-access-token"
+  };
+  
+app.options(/\.*/, cors(corsOptions), function(req, res) {
+  return res.sendStatus(200);
+});
+app.all('*', cors(corsOptions), function(req, res, next) {
+  next();
+});
 db();
-/*app.all('/*', function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", 'X-Requested-With, content-type, Authorization, accept');
-    //res.header("Access-Control-Allow-Credentials",true);
-    next();
-});*/
-/*app.all('/*', (req,res,next)=>{
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", 'X-Requested-With, content-type, Authorization, accept');
-    //res.header("Access-Control-Allow-Credentials",true);
-    //res.send('cors problem fixed:)');
 
-    next();
-})*/
+app.use(express.static(path.join(__dirname, 'assets')));
 
 
-var distDir = __dirname + "/dist/";
-app.use(express.static(distDir));
 
-const authRoutes = require('./routes/auth.route.js');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }))
 
-
+//************************************** passport */
 app.use(passport.initialize());
-//app.use(passport.session());
-//app.use(passport.authenticate('session'));
+passportConfig();
+//************************************** passportend */
+
 app.use(cookieParser('abcedf'));
 app.enable('trust proxy');
-/*app.use(session({
-    secret: 'abcedf',
-    resave: true,
-    saveUninitialized: false
-}));*/
-require('./config/passport')(passport);
 const port = process.env.PORT || 4000;
 
-app.use('/auth', authRoutes);
+//************************************** routes */
+const authRoutes = require('./routes/auth.route.js');
+const personalRoutes = require('./routes/personal.route.js');
 
+app.use('/auth', authRoutes);
+app.use('/personal', personalRoutes);
+//************************************** */
 const server = app.listen(port, function(){
     console.log('Listening on port ' + port);
 });

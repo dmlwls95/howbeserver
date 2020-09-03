@@ -7,11 +7,9 @@ const jwt = require('jsonwebtoken');
 const config = require('../config/database.js');
 const fs = require('fs');
 const crypto = require('crypto');
+const path = require('path');
 // require models
 let Account = require('../models/account.js');
-let Proimage = require('../models/proimage.js')
-
-let distDir = __dirname + "../dist";
 
 
 
@@ -38,7 +36,7 @@ authRoutes.get('/', (req,res,next) => {
 authRoutes.post('/login', (req,res,next) => {
   Account.findOne(
     {
-      ID: req.body.username
+      ID: req.body.email
     }, 
     (err, user) => {
       if(err) throw err;
@@ -51,11 +49,9 @@ authRoutes.post('/login', (req,res,next) => {
       } else {
         user.comparePassword(req.body.password, (err, isMatch) => {
           if(isMatch && !err){
-            let token = jwt.sign(user.toJSON(), config.secret, {
-              expiresIn: '30m'
-            });
+            let token = jwt.sign(user.ID, config.secret);
 
-            res.json({ success: true, token: 'JWT ' + token});
+            res.status(200).send({success: true, token: 'Bearer ' + token});
           } else {
             res.status(401).send({
               success: false,
@@ -79,8 +75,15 @@ authRoutes.post('/signup', (req,res)=>{
       newItem.salt = buf.toString('base64');
       newItem.check = req.body.check;
       newItem.birthday = req.body.birthday;
-      newItem.proImage.data = fs.readFileSync(__dirname + '/default-profile.png');
+      if(!fs.existsSync(path.normalize(__dirname + '/../assets/profileimage/' + newItem._id.toString()))){
+        fs.mkdirSync(path.normalize(__dirname + '/../assets/profileimage/' + newItem._id.toString()));
+      }
+      const defaultimage = fs.readFileSync(__dirname + '/default-profile.png');
+      fs.writeFileSync(path.normalize(__dirname + '/../assets/profileimage/' + newItem._id.toString() + '/default.png') , defaultimage);
+      
+      newItem.proImage.dataurl = '/../assets/profileimage/' + newItem._id.toString() + '/default.png';
       newItem.proImage.contentType = 'image/png';
+
       Account.findOne(
         {ID: req.body.ID}, (err,result)=>{
           if(err){
@@ -119,18 +122,6 @@ authRoutes.get('/jwtcheck', passport.authenticate('jwt', { session: false }), (r
   if (token) {
     return res.status(200).send({ success: true, msg: 'Authorized' });
   } else {
-    return res.status(403).send({ success: false, msg: 'Unauthorized.' });
-  }
-})
-//** getting profile image */
-authRoutes.post('/profile', passport.authenticate('jwt', { session: false }), (req,res)=>{
-  let token = getToken(req.headers);
-  console.log(req.body);
-  if (token){
-    Account.findOne({ID: req.body.id}, (err, result)=>{
-      res.send(result);
-    })
-  }else{
     return res.status(403).send({ success: false, msg: 'Unauthorized.' });
   }
 })
