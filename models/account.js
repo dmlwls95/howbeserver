@@ -6,6 +6,8 @@ let accountSchema = mongoose.Schema(
   {
     _id: mongoose.Schema.Types.ObjectId,
 
+    howto: { type: String },
+
     ID: { type: String },
 
     PW: { type: String },

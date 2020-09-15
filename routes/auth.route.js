@@ -8,6 +8,10 @@ const config = require('../config/database.js');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
+const accountSid = 'AC297e07cd092c6de9c06542ff31439cdd';
+const authToken = 'd31c8e9b551c3b117c8f17d57b9fd089';
+const client = require('twilio')(accountSid, authToken);
+
 // require models
 let Account = require('../models/account.js');
 
@@ -71,6 +75,7 @@ authRoutes.post('/signup', (req,res)=>{
       let newItem = new Account();
       newItem._id = new mongoose.Types.ObjectId();
       newItem.ID = req.body.email;
+      newItem.howto = req.body.howto;
       newItem.PW = key.toString('base64');
       newItem.salt = buf.toString('base64');
       newItem.check = req.body.check;
@@ -167,6 +172,57 @@ authRoutes.post('/alert',(req,res)=>{
     }
   )
 });
+authRoutes.post('/sendsmssign', (req,res) => {
+  
+  Account.findOne({ID: req.body.phone}, (err, result)=>{
+    if(result){
+      res.status(403).send('already exist');
+    } else {
+      client.verify.services('VA0a2f61d8931973f9f5aacb665cb0ffd2')
+      .verifications
+      .create({to: '+82' + req.body.phone, channel: 'sms'})
+      .then(verification => {
+        if(verification.status === 'pending'){
+          res.status(200).send('sms successfully sent');
+        }  
+      });
+    }
+  });
+})
+authRoutes.post('/sendsmsauth', (req,res) => {
+  Account.findOne({ID: req.body.phone}, (err, result)=>{
+    if(result){
+      client.verify.services('VA0a2f61d8931973f9f5aacb665cb0ffd2')
+      .verifications
+      .create({to: '+82' + req.body.phone, channel: 'sms'})
+      .then(verification => {
+        if(verification.status === 'pending'){
+          res.status(200).send('sms successfully sent');
+        }  
+      });
+    } else {
+      res.status(402).send('user not found');
+    }
+  });
+})
+
+authRoutes.post('/checksmsauth', (req,res) =>{
+  console.log(req.body);
+  let tmp = JSON.parse(req.body.number)
+  client.verify.services('VA0a2f61d8931973f9f5aacb665cb0ffd2')
+  .verificationChecks
+  .create({to: '+82' + tmp.phone, code: tmp.checknumber })
+  .then(verification_check => {
+    console.log(verification_check.status);
+    if(verification_check.status === 'approved'){
+      res.status(200).send('auth success');
+    } else if(verification_check.status === 'pending'){
+      res.status(403).send('is still pending');
+    } else if(verification_check.status === 'canceled'){
+      res.status(403).send('number is not correct');
+    }
+  });
+})
 
 
 module.exports = authRoutes;
