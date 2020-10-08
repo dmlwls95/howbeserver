@@ -59,5 +59,27 @@ personalRoutes.get('/profileimage', passport.authenticate('jwt', { session: fals
   }
 })
 
+personalRoutes.post('/whatisyourhowbe', passport.authenticate('jwt', { session: false }), (req,res)=>{
+  let token = getToken(req.headers);
+  if (token){
+    const decoded = jwt.verify(token, config.secret);
+    Account.findOne({ID: decoded}, (err, result)=>{
+      if(err) res.status(403);
+      if(result){
+        let tmp = req.body;
+        tmp.forEach(element => {
+          result.howbe.push(element);
+        });
+        result.save();
+        res.status(200).send({ success: true, msg: 'hobby selected' })
+      } else {
+      }
+    })
+  }else{
+    return res.status(403).send({ success: false, msg: 'Unauthorized.' });
+  }
+  
+})
+
 
 module.exports = personalRoutes;

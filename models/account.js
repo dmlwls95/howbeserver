@@ -16,12 +16,22 @@ let accountSchema = mongoose.Schema(
 
     birthday: {type : Date},
     
-    check: {type: String},
+    check: [{
+      val: String,
+      ischecked: Boolean
+    }],
     
     proImage : {
        contentType: String,
        dataurl: String
-      }
+    },
+
+    posts : [ mongoose.Schema.Types.ObjectId ],
+    
+    howbe: [{
+      name: String,
+      ischecked: Boolean
+    }]
   },
   { collection: 'account' }
 );

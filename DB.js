@@ -13,4 +13,7 @@ module.exports = () => {
     connect();
     mongoose.connection.on('disconnected', connect);
     require('./models/account.js');
+    require('./models/posts.js');
+    require('./models/recommend.js');
+    require('./models/hobby.js');
  };

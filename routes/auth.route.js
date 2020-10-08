@@ -70,6 +70,7 @@ authRoutes.post('/login', (req,res,next) => {
 
 //** sign up method */
 authRoutes.post('/signup', (req,res)=>{
+  let tmp = JSON.parse(req.body.check);
   crypto.randomBytes(64, (err, buf) => {
     crypto.pbkdf2(req.body.password, buf.toString('base64'), 100000, 64, 'sha512', (err, key) => {
       let newItem = new Account();
@@ -78,7 +79,9 @@ authRoutes.post('/signup', (req,res)=>{
       newItem.howto = req.body.howto;
       newItem.PW = key.toString('base64');
       newItem.salt = buf.toString('base64');
-      newItem.check = req.body.check;
+      tmp.forEach(element => {
+        newItem.check.push(element);
+      });
       newItem.birthday = req.body.birthday;
       if(!fs.existsSync(path.normalize(__dirname + '/../assets/profileimage/' + newItem._id.toString()))){
         fs.mkdirSync(path.normalize(__dirname + '/../assets/profileimage/' + newItem._id.toString()));
@@ -178,6 +181,7 @@ authRoutes.post('/sendsmssign', (req,res) => {
     if(result){
       res.status(403).send('already exist');
     } else {
+      
       client.verify.services('VA0a2f61d8931973f9f5aacb665cb0ffd2')
       .verifications
       .create({to: '+82' + req.body.phone, channel: 'sms'})
@@ -207,8 +211,8 @@ authRoutes.post('/sendsmsauth', (req,res) => {
 })
 
 authRoutes.post('/checksmsauth', (req,res) =>{
-  console.log(req.body);
-  let tmp = JSON.parse(req.body.number)
+  
+  let tmp = JSON.parse(req.body.number);
   client.verify.services('VA0a2f61d8931973f9f5aacb665cb0ffd2')
   .verificationChecks
   .create({to: '+82' + tmp.phone, code: tmp.checknumber })
